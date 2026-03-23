@@ -1,0 +1,13 @@
+# SQLite database — do NOT commit
+instance/
+*.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment
+.env
+venv/
+.venv/

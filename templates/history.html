@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction History</title>
+    <link rel="stylesheet" href="https://unpkg.com/spectre.css">
+    <link rel="stylesheet" href="https://unpkg.com/spectre.expanded.css">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f5f5f5;
+            font-family: Arial, sans-serif;
+        }
+        
+        .navbar {
+            background-color: #3498db;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+        }
+        
+        .filter-container {
+            max-width: 800px;
+            margin: 0 auto 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 25px;
+        }
+        
+        .filter-title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .filter-info {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+        
+        .filter-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .filter-item {
+            flex: 1;
+            min-width: 150px;
+            max-width: 200px;
+        }
+        
+        .filter-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        
+        .filter-input {
+            padding: 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            margin: 5px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: #2980b9;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2573a7;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+            transform: translateY(-2px);
+        }
+        
+        .table-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tr:hover {
+            background-color: #f1f8ff;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        .flash-messages {
+            max-width: 800px;
+            margin: 0 auto 20px;
+        }
+        
+        .flash-success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .flash-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="{{ url_for('index') }}" class="navbar-brand">Accounting & Warehouse System</a>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="filter-container">
+        <h2 class="filter-title">Transaction History</h2>
+        
+        <p class="filter-info">
+            Total entries: {{ total_entries }}
+            {% if showing_range %}
+                | Showing entries {{ line_from }} to {{ line_to }}
+            {% else %}
+                | Showing all entries
+            {% endif %}
+        </p>
+        
+        <form method="POST" action="{{ url_for('history_filter') }}">
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label class="filter-label">From Line</label>
+                    <input type="number" name="line_from" class="filter-input" min="0" placeholder="0">
+                </div>
+                
+                <div class="filter-item">
+                    <label class="filter-label">To Line</label>
+                    <input type="number" name="line_to" class="filter-input" min="1" placeholder="{{ total_entries }}">
+                </div>
+            </div>
+            
+            <div class="button-container">
+                <button type="submit" class="btn btn-primary">Filter History</button>
+                <a href="{{ url_for('history') }}" class="btn btn-secondary">Show All</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-container">
+        {% if history %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date/Time</th>
+                        <th>Transaction Type</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in history %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ entry.datetime }}</td>
+                            <td>{{ entry.type }}</td>
+                            <td>{{ entry.product }}</td>
+                            <td>{{ entry.quantity }}</td>
+                            <td>{{ entry.unit_price }}</td>
+                            <td>${{ "%.2f"|format(entry.total) if entry.total is number else entry.total }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="no-data">
+                No transactions found. Start by making a purchase or sale!
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
